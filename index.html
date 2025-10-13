@@ -1,0 +1,409 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tạo Hóa Đơn Bán Hàng Nhanh</title>
+    <!-- Tải Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Tải thư viện jsPDF để tạo file PDF -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <!-- Tải thư viện html2canvas để chuyển đổi HTML sang Canvas (cần cho jsPDF) -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    
+    <style>
+        /* Thiết lập font chữ theo yêu cầu */
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f7f9fb;
+        }
+
+        /* Định dạng cho bản in (PDF/Giấy) */
+        @media print {
+            body > * {
+                display: none; /* Ẩn mọi thứ trừ phần preview khi in */
+            }
+            #invoice-preview {
+                display: block !important;
+                margin: 0;
+                padding: 0;
+                box-shadow: none;
+                max-width: 100%;
+                width: 7.75in; /* Chiều rộng trang A4 tiêu chuẩn (7.75 inch) */
+            }
+            .no-print {
+                display: none !important;
+            }
+
+            /* Đảm bảo bảng hiển thị đúng */
+            #invoice-preview table {
+                width: 100% !important;
+                border-collapse: collapse;
+            }
+
+            /* Điều chỉnh kích thước font cho bản in */
+            #invoice-preview {
+                font-size: 11pt !important;
+            }
+            #invoice-preview table {
+                font-size: 10pt !important;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container mx-auto p-4 md:p-8 flex flex-col lg:flex-row gap-8">
+        
+        <!-- Khu vực Nhập liệu (Input Form) -->
+        <div id="input-form" class="no-print lg:w-1/3 bg-white p-6 rounded-xl shadow-lg h-fit sticky top-4">
+            <h2 class="text-2xl font-bold mb-6 text-red-600">📝 Nhập Liệu Hóa Đơn</h2>
+            
+            <form id="invoice-form" onsubmit="event.preventDefault(); generateInvoice();">
+                <!-- Thông tin Hộ Kinh Doanh -->
+                <div class="mb-6 border-b pb-4">
+                    <h3 class="font-semibold text-lg mb-3 text-gray-700">Thông tin Hộ Kinh Doanh</h3>
+                    <input type="text" id="ten_cong_ty" placeholder="Tên Hộ/Công ty (VD: CÔNG TY HOÀNG PHÚC)" class="w-full p-2 mb-2 border rounded-lg focus:ring-blue-500" value="HỘ KINH DOANH QUỐC AN LK" required>
+                    <input type="text" id="dia_chi" placeholder="Địa chỉ (VD: Bản Na Kay...)" class="w-full p-2 mb-2 border rounded-lg" value="14 Nguyễn Trường Tộ, Phường Long Khánh, Tỉnh Đồng Nai" required>
+                    <input type="tel" id="dien_thoai" placeholder="(VD: 020 5806 2626)" class="w-full p-2 mb-2 border rounded-lg" value="0348546624" required>
+                
+                    <div class="grid grid-cols-3 gap-2 mt-4">
+                        <input type="number" id="gio" placeholder="Giờ" class="w-full p-2 border rounded-lg" value="15" min="0" max="23" required>
+                        <input type="number" id="phut" placeholder="Phút" class="w-full p-2 border rounded-lg" value="10" min="0" max="59" required>
+                    </div>
+                    <div class="grid grid-cols-3 gap-2 mt-4">
+                        <input type="number" id="ngay" placeholder="Ngày" class="w-full p-2 border rounded-lg" value="15" min="1" max="31" required>
+                        <input type="number" id="thang" placeholder="Tháng" class="w-full p-2 border rounded-lg" value="10" min="1" max="12" required>
+                        <input type="number" id="nam" placeholder="Năm" class="w-full p-2 border rounded-lg" value="2025" required>
+                    </div>
+                    <input type="text" id="so_hoa_don" placeholder="Số Hóa Đơn (VD: 0000001)" class="w-full p-2 mt-2 border rounded-lg" value="0000001" required>
+                </div>
+
+                <!-- Thông tin Khách hàng -->
+                <div class="mb-6 border-b pb-4">
+                    <h3 class="font-semibold text-lg mb-3 text-gray-700">Thông tin Khách hàng</h3>
+                    <input type="text" id="ten_nguoi_mua" placeholder="Họ tên người mua" class="w-full p-2 mb-2 border rounded-lg" required>
+                </div>
+
+                <!-- Thông tin Tính toán Tự động -->
+                <div class="mb-6 pb-4">
+                    <h3 class="font-semibold text-lg mb-3 text-gray-700">Tính toán Tự động (Gas & Dịch vụ)</h3>
+                    
+                    <!-- Input cho Tổng số tiền -->
+                    <label for="tong_so_tien_input" class="block text-sm font-medium text-gray-700 mb-1">Tổng số tiền Khách trả (VNĐ)</label>
+                    <input 
+                        type="text" 
+                        id="tong_so_tien_input" 
+                        placeholder="VD: 550.000" 
+                        class="w-full p-2 mb-3 border-2 border-red-400 rounded-lg focus:ring-red-500 focus:border-red-500 font-bold" 
+                        oninput="formatNumber(this)"
+                        value="550.000"
+                        required>
+
+                    <!-- Input số tiền bằng chữ (Giữ nguyên) -->
+                    <label for="so_tien_chu" class="block text-sm font-medium text-gray-700 mb-1">Số tiền bằng chữ</label>
+                    <input type="text" id="so_tien_chu" placeholder="Số tiền bằng chữ (Bắt buộc)" class="w-full p-2 border rounded-lg" value="Năm trăm năm mươi ngàn đồng chẵn" required>
+                </div>
+                
+                <button type="submit" class="w-full bg-blue-600 text-white p-3 rounded-lg font-bold hover:bg-blue-700 transition duration-150 shadow-md">
+                    Xem & Tạo Hóa Đơn
+                </button>
+            </form>
+            
+            <button id="download-button" onclick="downloadPDF()" class="w-full mt-3 bg-red-600 text-white p-3 rounded-lg font-bold hover:bg-red-700 transition duration-150 shadow-md hidden">
+                Tải Xuống PDF (Tiêu chuẩn)
+            </button>
+            <button id="print-button" onclick="window.print()" class="w-full mt-3 bg-green-600 text-white p-3 rounded-lg font-bold hover:bg-green-700 transition duration-150 shadow-md hidden">
+                In ra PDF / Giấy
+            </button>
+        </div>
+
+        <!-- Khu vực Preview (Template Hóa đơn) -->
+        <div class="lg:w-2/3">
+            <div id="invoice-preview" class="bg-white p-6 shadow-xl rounded-xl hidden" style="font-family: 'Times New Roman', serif; font-size: 11pt; line-height: 1.2; width: 7.75in;">
+                
+                <div class="text-right mb-4">
+                    <span id="preview-date-number">Ngày ... tháng ... năm 20... Số: 0000001</span>
+                </div>
+
+                <div class="text-center mb-6">
+                    <span class="text-lg font-bold text-red-600">HÓA ĐƠN BÁN HÀNG</span>
+                </div>
+
+                <!-- Thông tin Hộ Kinh Doanh -->
+                <div class="text-sm space-y-0.5 mb-4">
+                    <div>
+                        <span class="text-red-600 font-bold">Đơn vị bán hàng:</span> <span id="preview-ten-cong-ty">...</span>
+                    </div>
+                    <div>
+                        <span class="text-red-600 font-bold">Địa chỉ:</span> <span id="preview-dia_chi">...</span> 
+                    </div>
+                    <div>
+                        <span class="text-red-600 font-bold">Điện thoại:</span> <span id="preview-dien_thoai"></span>
+                    </div>
+                </div>
+
+                <!-- Thông tin Khách hàng -->
+                <div class="grid grid-cols-12 gap-1 text-sm mb-4">
+                    <div class="col-span-8">
+                        <span class="whitespace-nowrap">Họ tên người mua: <span id="preview-ten-nguoi-mua"></span></span>
+                        <div class="border-b border-dotted border-gray-500 leading-none mt-0.5"></div>
+                    </div>
+                </div>
+
+                <!-- Bảng Hàng hóa (Bây giờ tự động điền) -->
+                <table class="w-full border border-black mb-4 text-sm" id="product-table">
+                    <thead>
+                        <tr class="text-center font-bold text-red-600 bg-gray-50">
+                            <td class="border border-black p-1 w-[5%]">STT</td>
+                            <td class="border border-black p-1 w-[35%]">Tên hàng hóa</td>
+                            <td class="border border-black p-1 w-[10%]">ĐVT</td>
+                            <td class="border border-black p-1 w-[10%]">Số lượng</td>
+                            <td class="border border-black p-1 w-[10%]">Đơn giá</td>
+                            <td class="border border-black p-1 w-[15%]">Thành tiền</td>
+                            <td class="border border-black p-1 w-[15%]">Ghi chú</td>
+                        </tr>
+                    </thead>
+                    <tbody id="product-table-body">
+                        <!-- Nội dung sẽ được tạo tự động bằng JS -->
+                    </tbody>
+                </table>
+                
+                <!-- Số tiền bằng chữ -->
+                <div class="text-sm mb-12">
+                    <span class="text-red-600">Số tiền bằng chữ:</span> <span id="preview-so-tien-chu">...</span>
+                    <div class="border-b border-dotted border-gray-500 leading-none mt-0.5"></div>
+                </div>
+
+                <!-- Chữ ký - ĐÃ BỎ THEO YÊU CẦU -->
+                <div class="grid grid-cols-2 text-center text-sm mt-10">
+                    <!-- Người bán hàng (Phải) -->
+                    <div class="col-span-2 text-right pr-4">
+                        <p class="font-bold mb-4">Người bán hàng</p>
+                        <br><br><br><br><br>
+                    </div>
+                </div>
+
+            </div>
+            
+            <div id="initial-message" class="bg-yellow-100 p-6 rounded-xl shadow-lg text-center mt-6">
+                <p class="text-xl font-semibold text-yellow-800">Vui lòng nhập thông tin vào biểu mẫu bên trái và nhấn "Xem & Tạo Hóa Đơn" để xem trước.</p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Định nghĩa các loại Gas và đơn giá cố định (đã sắp xếp giảm dần theo giá)
+        const GAS_PRODUCTS = [
+            { ten_hang: "Bình Gas 45kg (Công nghiệp)", dvt: "Bình", don_gia: 950000 },
+            { ten_hang: "Bình Gas 12kg (Đỏ)", dvt: "Bình", don_gia: 300000 },
+            { ten_hang: "Bình Gas 12kg (Xám)", dvt: "Bình", don_gia: 250000 },
+            { ten_hang: "Bình Gas Mini (6kg)", dvt: "Bình", don_gia: 120000 }
+        ];
+
+        // Giới hạn Phí Dịch Vụ
+        const MIN_FEE = 30000;
+        const MAX_FEE = 400000; 
+
+        // Hàm định dạng số có dấu phân cách hàng nghìn
+        function formatCurrency(number) {
+            return new Intl.NumberFormat('vi-VN', { style: 'decimal' }).format(number);
+        }
+
+        // Hàm xóa định dạng số để lấy giá trị số thực
+        function unformatCurrency(text) {
+            // Đảm bảo xử lý cả trường hợp rỗng hoặc không phải số
+            if (!text) return 0;
+            // Xóa tất cả dấu chấm, chuyển thành số nguyên
+            return parseInt(text.replace(/\./g, ''), 10) || 0;
+        }
+
+        // Hàm định dạng số khi người dùng nhập (ví dụ: 1000000 -> 1.000.000)
+        function formatNumber(input) {
+            let value = input.value.replace(/\./g, ''); // Xóa dấu chấm cũ
+            if (value) {
+                // Thêm dấu chấm
+                input.value = formatCurrency(parseInt(value));
+            }
+        }
+
+
+        function generateInvoice() {
+            // Lấy dữ liệu từ form
+            const ten_cong_ty = document.getElementById('ten_cong_ty').value;
+            const dia_chi = document.getElementById('dia_chi').value;
+            const dien_thoai = document.getElementById('dien_thoai').value;
+            const gio = document.getElementById('gio').value;
+            const phut = document.getElementById('phut').value;
+            const ngay = document.getElementById('ngay').value;
+            const thang = document.getElementById('thang').value;
+            const nam = document.getElementById('nam').value;
+            const so_hoa_don = document.getElementById('so_hoa_don').value;
+            const so_tien_chu = document.getElementById('so_tien_chu').value;
+            const ten_nguoi_mua = document.getElementById('ten_nguoi_mua').value;
+            const tong_so_tien_input = document.getElementById('tong_so_tien_input').value;
+            
+            // Xử lý Tổng số tiền nhập vào (chuyển sang số nguyên)
+            const TONG_TIEN_KHACH_TRA = unformatCurrency(tong_so_tien_input);
+            
+
+            // --- Logic tính toán tự động (Greedy Algorithm) ---
+            
+            let products = [];
+            let currentStt = 1;
+            let totalGasCost = 0;
+
+            // 1. Áp dụng giới hạn MIN_FEE để tìm số tiền tối đa có thể chi cho Gas
+            // Nếu khách trả quá ít (dưới MIN_FEE), thì tiền cho Gas bằng 0.
+            let maxMoneyForGas = Math.max(0, TONG_TIEN_KHACH_TRA - MIN_FEE);
+            let gasMoneyToSpend = maxMoneyForGas;
+            
+            // 2. Chạy thuật toán tham lam (Greedy)
+            GAS_PRODUCTS.forEach(product => {
+                if (gasMoneyToSpend >= product.don_gia) {
+                    const so_luong = Math.floor(gasMoneyToSpend / product.don_gia);
+                    const thanh_tien = so_luong * product.don_gia;
+                    
+                    products.push({
+                        stt: currentStt++,
+                        ten_hang: product.ten_hang, 
+                        dvt: product.dvt,
+                        so_luong: so_luong,
+                        don_gia: product.don_gia,
+                        thanh_tien: thanh_tien,
+                        ghi_chu: ""
+                    });
+
+                    gasMoneyToSpend -= thanh_tien;
+                    totalGasCost += thanh_tien;
+                }
+            });
+
+            // 3. Tính Phí Dịch Vụ (Remainder)
+            let phi_dich_vu = TONG_TIEN_KHACH_TRA - totalGasCost;
+
+            // 4. Thêm dòng Phí Dịch Vụ (nếu có và > 0)
+            if (phi_dich_vu > 0) {
+                 let ghi_chu_phi = "Chi phí vận chuyển/lắp đặt";
+                 if (phi_dich_vu > MAX_FEE) {
+                     // Nếu phí dịch vụ vượt quá MAX_FEE, chỉ ghi nhận phí thực tế (Đây là trường hợp khách trả tiền nhưng không mua được Gas thêm)
+                     ghi_chu_phi += ` (Lưu ý: Phí Dịch Vụ vượt quá ${formatCurrency(MAX_FEE)} VNĐ quy định)`;
+                 } else if (phi_dich_vu < MIN_FEE) {
+                    // Trường hợp này gần như không xảy ra do logic maxMoneyForGas ở bước 1, nhưng thêm vào để đảm bảo.
+                    ghi_chu_phi += ` (Lưu ý: Phí Dịch Vụ dưới ${formatCurrency(MIN_FEE)} VNĐ)`;
+                 }
+
+                 products.push({
+                    stt: currentStt++,
+                    ten_hang: "Phí Dịch Vụ",
+                    dvt: "Lần",
+                    so_luong: 1,
+                    don_gia: phi_dich_vu,
+                    thanh_tien: phi_dich_vu,
+                    ghi_chu: ghi_chu_phi
+                });
+            }
+
+
+            // --- Hiển thị lên Preview ---
+
+            // 1. Cập nhật ngày/số hóa đơn
+            document.getElementById('preview-date-number').textContent = 
+                `${gio}:${phut} Ngày ${ngay} tháng ${thang} năm ${nam} ... Số: ${so_hoa_don}`;
+
+            // 2. Cập nhật thông tin Hộ Kinh Doanh
+            document.getElementById('preview-ten-cong-ty').textContent = ten_cong_ty;
+            document.getElementById('preview-dia_chi').textContent = dia_chi;
+            document.getElementById('preview-dien_thoai').textContent = `${dien_thoai}`;
+
+            // 3. Cập nhật thông tin Khách hàng
+            document.getElementById('preview-ten-nguoi-mua').textContent = ten_nguoi_mua; 
+
+            // 4. Tạo nội dung bảng sản phẩm
+            const tableBody = document.getElementById('product-table-body');
+            tableBody.innerHTML = ''; // Xóa nội dung cũ
+
+            products.forEach(item => {
+                const row = tableBody.insertRow();
+                row.innerHTML = `
+                    <td class="border border-black p-1 text-center">${item.stt}</td>
+                    <td class="border border-black p-1">${item.ten_hang}</td>
+                    <td class="border border-black p-1 text-center">${item.dvt}</td>
+                    <td class="border border-black p-1 text-right">${formatCurrency(item.so_luong)}</td>
+                    <td class="border border-black p-1 text-right">${formatCurrency(item.don_gia)}</td>
+                    <td class="border border-black p-1 text-right">${formatCurrency(item.thanh_tien)}</td>
+                    <td class="border border-black p-1">${item.ghi_chu}</td>
+                `;
+            });
+            
+            // Dòng Tổng cộng cuối cùng
+            const totalRow = tableBody.insertRow();
+            totalRow.innerHTML = `
+                <td colspan="2" class="border border-black p-1 font-bold text-center">Tổng:</td>
+                <td colspan="3" class="border border-black p-1"></td>
+                <td class="border border-black p-1 font-bold text-right">${formatCurrency(TONG_TIEN_KHACH_TRA)}</td>
+                <td class="border border-black p-1"></td>
+            `;
+
+            // 5. Cập nhật số tiền bằng chữ
+            document.getElementById('preview-so-tien-chu').textContent = so_tien_chu;
+
+            // Hiển thị preview và nút In/Tải xuống
+            document.getElementById('invoice-preview').classList.remove('hidden');
+            document.getElementById('print-button').classList.remove('hidden');
+            document.getElementById('download-button').classList.remove('hidden');
+            document.getElementById('initial-message').classList.add('hidden');
+        }
+
+        // Hàm Tải xuống PDF
+        async function downloadPDF() {
+            const { jsPDF } = window.jspdf;
+            const input = document.getElementById('invoice-preview');
+
+            // Cấu hình để html2canvas giữ nguyên kích thước và chất lượng
+            const canvas = await html2canvas(input, {
+                scale: 2, // Tăng độ phân giải để hình ảnh không bị mờ
+                useCORS: true,
+                logging: true
+            });
+
+            const imgData = canvas.toDataURL('image/png');
+            const pdf = new jsPDF({
+                orientation: 'portrait',
+                unit: 'in',
+                format: 'letter' // Kích thước giấy thư (gần giống A4)
+            });
+            
+            const pdfWidth = pdf.internal.pageSize.getWidth();
+            const pdfHeight = pdf.internal.pageSize.getHeight();
+            
+            const imgWidth = 7.75; // Chiều rộng cố định của hóa đơn
+            const imgHeight = (canvas.height * imgWidth) / canvas.width;
+            
+            // Tính toán vị trí để căn giữa
+            const x = (pdfWidth - imgWidth) / 2;
+            const y = 0.2; // Lề trên
+
+            pdf.addImage(imgData, 'PNG', x, y, imgWidth, imgHeight);
+            
+            // Tạo tên file dựa trên thông tin hóa đơn
+            const so_hoa_don = document.getElementById('so_hoa_don').value || '0000';
+            const ten_nguoi_mua = document.getElementById('ten_nguoi_mua').value || 'KhachHang';
+            const ngay = document.getElementById('ngay').value;
+            const thang = document.getElementById('thang').value;
+
+            const fileName = `HD_${so_hoa_don}_${ten_nguoi_mua}_${ngay}${thang}.pdf`;
+            
+            pdf.save(fileName);
+        }
+
+        // Đặt mặc định ngày tháng năm hiện tại nếu người dùng chưa nhập
+        window.onload = function() {
+            const today = new Date();
+            document.getElementById('ngay').value = today.getDate();
+            document.getElementById('thang').value = today.getMonth() + 1;
+            document.getElementById('nam').value = today.getFullYear();
+        }
+    </script>
+</body>
+</html>
