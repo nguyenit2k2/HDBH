@@ -57,20 +57,20 @@
             <form id="invoice-form" onsubmit="event.preventDefault(); generateInvoice();">
                 <div class="mb-6 border-b pb-4">
                     <h3 class="font-semibold text-lg mb-3 text-gray-700">Thông tin Hộ Kinh Doanh</h3>
-                    <input type="text" id="ten_cong_ty" placeholder="Tên Hộ/Công ty (VD: CÔNG TY HOÀNG PHÚC)" class="w-full p-2 mb-2 border rounded-lg focus:ring-blue-500" value="HỘ KINH DOANH QUỐC AN LK" required>
-                    <input type="text" id="dia_chi" placeholder="Địa chỉ (VD: Bản Na Kay...)" class="w-full p-2 mb-2 border rounded-lg" value="14 Nguyễn Trường Tộ, Phường Long Khánh, Tỉnh Đồng Nai" required>
-                    <input type="tel" id="dien_thoai" placeholder="(VD: 020 5806 2626)" class="w-full p-2 mb-2 border rounded-lg" value="0348546624" required>
+                    <input type="text" id="ten_cong_ty" placeholder="Tên Hộ/Công ty (VD: CÔNG TY HOÀNG PHÚC)" class="w-full p-2 mb-2 border rounded-lg focus:ring-blue-500" required>
+                    <input type="text" id="dia_chi" placeholder="Địa chỉ (VD: Bản Na Kay...)" class="w-full p-2 mb-2 border rounded-lg"  required>
+                    <input type="tel" id="dien_thoai" placeholder="(VD: 020 5806 2626)" class="w-full p-2 mb-2 border rounded-lg"  required>
                 
                     <div class="grid grid-cols-3 gap-2 mt-4">
-                        <input type="number" id="gio" placeholder="Giờ" class="w-full p-2 border rounded-lg" value="15" min="0" max="23" required>
-                        <input type="number" id="phut" placeholder="Phút" class="w-full p-2 border rounded-lg" value="10" min="0" max="59" required>
+                        <input type="number" id="gio" placeholder="Giờ" class="w-full p-2 border rounded-lg"  min="0" max="23" required>
+                        <input type="number" id="phut" placeholder="Phút" class="w-full p-2 border rounded-lg"  min="0" max="59" required>
                     </div>
                     <div class="grid grid-cols-3 gap-2 mt-4">
-                        <input type="number" id="ngay" placeholder="Ngày" class="w-full p-2 border rounded-lg" value="15" min="1" max="31" required>
-                        <input type="number" id="thang" placeholder="Tháng" class="w-full p-2 border rounded-lg" value="10" min="1" max="12" required>
+                        <input type="number" id="ngay" placeholder="Ngày" class="w-full p-2 border rounded-lg"  min="1" max="31" required>
+                        <input type="number" id="thang" placeholder="Tháng" class="w-full p-2 border rounded-lg"  min="1" max="12" required>
                         <input type="number" id="nam" placeholder="Năm" class="w-full p-2 border rounded-lg" value="2025" required>
                     </div>
-                    <input type="text" id="so_hoa_don" placeholder="Số Hóa Đơn (VD: 0000001)" class="w-full p-2 mt-2 border rounded-lg" value="0000001" required>
+                    <input type="text" id="so_hoa_don" placeholder="Số Hóa Đơn (VD: 0000001)" class="w-full p-2 mt-2 border rounded-lg" required>
                 </div>
 
                 <div class="mb-6 border-b pb-4">
