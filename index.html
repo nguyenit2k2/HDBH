@@ -4,13 +4,9 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Tạo Hóa Đơn Bán Hàng Nhanh</title>
-    <!-- Tải Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
-    <!-- Tải thư viện jsPDF để tạo file PDF -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-    <!-- Tải thư viện html2canvas để chuyển đổi HTML sang Canvas (cần cho jsPDF) -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
-    
     <style>
         /* Thiết lập font chữ theo yêu cầu */
         body {
@@ -55,12 +51,10 @@
 
     <div class="container mx-auto p-4 md:p-8 flex flex-col lg:flex-row gap-8">
         
-        <!-- Khu vực Nhập liệu (Input Form) -->
         <div id="input-form" class="no-print lg:w-1/3 bg-white p-6 rounded-xl shadow-lg h-fit sticky top-4">
             <h2 class="text-2xl font-bold mb-6 text-red-600">📝 Nhập Liệu Hóa Đơn</h2>
             
             <form id="invoice-form" onsubmit="event.preventDefault(); generateInvoice();">
-                <!-- Thông tin Hộ Kinh Doanh -->
                 <div class="mb-6 border-b pb-4">
                     <h3 class="font-semibold text-lg mb-3 text-gray-700">Thông tin Hộ Kinh Doanh</h3>
                     <input type="text" id="ten_cong_ty" placeholder="Tên Hộ/Công ty (VD: CÔNG TY HOÀNG PHÚC)" class="w-full p-2 mb-2 border rounded-lg focus:ring-blue-500" value="HỘ KINH DOANH QUỐC AN LK" required>
@@ -79,17 +73,14 @@
                     <input type="text" id="so_hoa_don" placeholder="Số Hóa Đơn (VD: 0000001)" class="w-full p-2 mt-2 border rounded-lg" value="0000001" required>
                 </div>
 
-                <!-- Thông tin Khách hàng -->
                 <div class="mb-6 border-b pb-4">
                     <h3 class="font-semibold text-lg mb-3 text-gray-700">Thông tin Khách hàng</h3>
                     <input type="text" id="ten_nguoi_mua" placeholder="Họ tên người mua" class="w-full p-2 mb-2 border rounded-lg" required>
                 </div>
 
-                <!-- Thông tin Tính toán Tự động -->
                 <div class="mb-6 pb-4">
                     <h3 class="font-semibold text-lg mb-3 text-gray-700">Tính toán Tự động (Gas & Dịch vụ)</h3>
                     
-                    <!-- Input cho Tổng số tiền -->
                     <label for="tong_so_tien_input" class="block text-sm font-medium text-gray-700 mb-1">Tổng số tiền Khách trả (VNĐ)</label>
                     <input 
                         type="text" 
@@ -100,9 +91,8 @@
                         value="550.000"
                         required>
 
-                    <!-- Input số tiền bằng chữ (Giữ nguyên) -->
                     <label for="so_tien_chu" class="block text-sm font-medium text-gray-700 mb-1">Số tiền bằng chữ</label>
-                    <input type="text" id="so_tien_chu" placeholder="Số tiền bằng chữ (Bắt buộc)" class="w-full p-2 border rounded-lg" value="Năm trăm năm mươi ngàn đồng chẵn" required>
+                    <input type="text" id="so_tien_chu" placeholder="Số tiền bằng chữ (Tự động điền)" class="w-full p-2 border rounded-lg bg-gray-100 text-gray-600" value="Năm trăm năm mươi ngàn đồng chẵn" readonly required>
                 </div>
                 
                 <button type="submit" class="w-full bg-blue-600 text-white p-3 rounded-lg font-bold hover:bg-blue-700 transition duration-150 shadow-md">
@@ -118,7 +108,6 @@
             </button>
         </div>
 
-        <!-- Khu vực Preview (Template Hóa đơn) -->
         <div class="lg:w-2/3">
             <div id="invoice-preview" class="bg-white p-6 shadow-xl rounded-xl hidden" style="font-family: 'Times New Roman', serif; font-size: 11pt; line-height: 1.2; width: 7.75in;">
                 
@@ -130,7 +119,6 @@
                     <span class="text-lg font-bold text-red-600">HÓA ĐƠN BÁN HÀNG</span>
                 </div>
 
-                <!-- Thông tin Hộ Kinh Doanh -->
                 <div class="text-sm space-y-0.5 mb-4">
                     <div>
                         <span class="text-red-600 font-bold">Đơn vị bán hàng:</span> <span id="preview-ten-cong-ty">...</span>
@@ -143,7 +131,6 @@
                     </div>
                 </div>
 
-                <!-- Thông tin Khách hàng -->
                 <div class="grid grid-cols-12 gap-1 text-sm mb-4">
                     <div class="col-span-8">
                         <span class="whitespace-nowrap">Họ tên người mua: <span id="preview-ten-nguoi-mua"></span></span>
@@ -151,7 +138,6 @@
                     </div>
                 </div>
 
-                <!-- Bảng Hàng hóa (Bây giờ tự động điền) -->
                 <table class="w-full border border-black mb-4 text-sm" id="product-table">
                     <thead>
                         <tr class="text-center font-bold text-red-600 bg-gray-50">
@@ -165,19 +151,15 @@
                         </tr>
                     </thead>
                     <tbody id="product-table-body">
-                        <!-- Nội dung sẽ được tạo tự động bằng JS -->
-                    </tbody>
+                        </tbody>
                 </table>
                 
-                <!-- Số tiền bằng chữ -->
                 <div class="text-sm mb-12">
                     <span class="text-red-600">Số tiền bằng chữ:</span> <span id="preview-so-tien-chu">...</span>
                     <div class="border-b border-dotted border-gray-500 leading-none mt-0.5"></div>
                 </div>
 
-                <!-- Chữ ký - ĐÃ BỎ THEO YÊU CẦU -->
                 <div class="grid grid-cols-2 text-center text-sm mt-10">
-                    <!-- Người bán hàng (Phải) -->
                     <div class="col-span-2 text-right pr-4">
                         <p class="font-bold mb-4">Người bán hàng</p>
                         <br><br><br><br><br>
@@ -205,25 +187,134 @@
         const MIN_FEE = 30000;
         const MAX_FEE = 400000; 
 
+        // Mảng chữ số tiếng Việt
+        const ChuSo = ['không', 'một', 'hai', 'ba', 'bốn', 'năm', 'sáu', 'bảy', 'tám', 'chín'];
+        const Tien = ['', 'nghìn', 'triệu', 'tỷ'];
+
+        // Hàm đọc số có 3 chữ số (ví dụ: 123 -> một trăm hai mươi ba)
+        function readGroup(group, isReadingThousands) {
+            let result = "";
+            
+            // Cắt chuỗi để lấy từng chữ số
+            const c = parseInt(group.charAt(0));
+            const b = parseInt(group.charAt(1));
+            const a = parseInt(group.charAt(2));
+
+            // Đọc chữ số hàng trăm
+            if (c !== 0) {
+                result += ChuSo[c] + " trăm ";
+            } else if (isReadingThousands) {
+                // Thêm 'linh' hoặc 'không trăm' nếu là nhóm đầu tiên và bằng 000
+            }
+
+            // Đọc chữ số hàng chục
+            if (c !== 0 || b !== 0) { // Nếu không phải là 0xx (ví dụ: 005)
+                if (b === 1) {
+                    result += "mười ";
+                } else if (b > 1) {
+                    result += ChuSo[b] + " mươi ";
+                } else if (c !== 0 && a !== 0) { // Ví dụ: 105 -> một trăm linh năm
+                    result += "linh ";
+                }
+            }
+
+            // Đọc chữ số hàng đơn vị
+            if (b === 1) { // 1x
+                if (a === 5) {
+                    result += "lăm";
+                } else if (a !== 0) {
+                    result += ChuSo[a];
+                }
+            } else if (b > 1) { // 2x, 3x, ...
+                if (a === 1) {
+                    result += "mốt";
+                } else if (a === 5) {
+                    result += "lăm";
+                } else if (a !== 0) {
+                    result += ChuSo[a];
+                }
+            } else { // 0x
+                if (c !== 0 || b !== 0 || a !== 0) { // Nếu là cba mà không phải 000
+                    if (c === 0 && b === 0) { // Trường hợp 00a (a!=0)
+                        result += ChuSo[a];
+                    } else if (a !== 0) {
+                        result += ChuSo[a];
+                    }
+                }
+            }
+            
+            return result.trim();
+        }
+
+        // Hàm chuyển số thành chữ tiếng Việt (Chỉ hỗ trợ đến 999 tỷ - 12 chữ số)
+        function numberToVietnameseWords(number) {
+            let s = String(number);
+            // Làm tròn và đảm bảo là số nguyên (vì hóa đơn thường không có lẻ)
+            s = String(Math.round(Number(s)));
+
+            if (s === '0') return 'Không đồng chẵn';
+            
+            // Chia số thành các nhóm 3 chữ số từ phải sang trái
+            const groups = [];
+            for (let i = s.length; i > 0; i -= 3) {
+                groups.push(s.substring(Math.max(0, i - 3), i).padStart(3, '0'));
+            }
+
+            let result = "";
+            let groupIndex = 0;
+
+            for (let i = 0; i < groups.length; i++) {
+                const group = groups[i];
+                const words = readGroup(group, i > 0 && Number(group) !== 0);
+                
+                if (words.length > 0) {
+                    result = words + " " + Tien[i] + " " + result;
+                }
+            }
+
+            // Dọn dẹp và định dạng cuối cùng
+            result = result.replace(/\s+/g, ' ').trim(); // Loại bỏ khoảng trắng thừa
+            result = result.charAt(0).toUpperCase() + result.slice(1); // Viết hoa chữ cái đầu
+            
+            // Thêm "đồng chẵn"
+            return result + " đồng chẵn";
+        }
+
         // Hàm định dạng số có dấu phân cách hàng nghìn
         function formatCurrency(number) {
+            // Đảm bảo số là số và không phải NaN
+            if (isNaN(number) || number === null) return '0';
             return new Intl.NumberFormat('vi-VN', { style: 'decimal' }).format(number);
         }
 
         // Hàm xóa định dạng số để lấy giá trị số thực
         function unformatCurrency(text) {
-            // Đảm bảo xử lý cả trường hợp rỗng hoặc không phải số
+            // Loại bỏ tất cả dấu chấm (.), nếu rỗng hoặc không phải số thì trả về 0
             if (!text) return 0;
-            // Xóa tất cả dấu chấm, chuyển thành số nguyên
             return parseInt(text.replace(/\./g, ''), 10) || 0;
         }
 
-        // Hàm định dạng số khi người dùng nhập (ví dụ: 1000000 -> 1.000.000)
+        /**
+         * Hàm định dạng số khi người dùng nhập (ví dụ: 1000000 -> 1.000.000) 
+         * và TỰ ĐỘNG CẬP NHẬT SỐ TIỀN BẰNG CHỮ
+         */
         function formatNumber(input) {
             let value = input.value.replace(/\./g, ''); // Xóa dấu chấm cũ
+            let numberValue = unformatCurrency(input.value);
+
             if (value) {
-                // Thêm dấu chấm
-                input.value = formatCurrency(parseInt(value));
+                // 1. Cập nhật lại định dạng số
+                input.value = formatCurrency(numberValue);
+            } else {
+                input.value = ''; // Giữ trống nếu không có giá trị
+            }
+            
+            // **2. CẬP NHẬT SỐ TIỀN BẰNG CHỮ**
+            const so_tien_chu_input = document.getElementById('so_tien_chu');
+            if (numberValue > 0) {
+                so_tien_chu_input.value = numberToVietnameseWords(numberValue);
+            } else {
+                so_tien_chu_input.value = "Không đồng chẵn";
             }
         }
 
@@ -239,7 +330,7 @@
             const thang = document.getElementById('thang').value;
             const nam = document.getElementById('nam').value;
             const so_hoa_don = document.getElementById('so_hoa_don').value;
-            const so_tien_chu = document.getElementById('so_tien_chu').value;
+            const so_tien_chu = document.getElementById('so_tien_chu').value; // Lấy giá trị đã tự động cập nhật
             const ten_nguoi_mua = document.getElementById('ten_nguoi_mua').value;
             const tong_so_tien_input = document.getElementById('tong_so_tien_input').value;
             
@@ -254,7 +345,6 @@
             let totalGasCost = 0;
 
             // 1. Áp dụng giới hạn MIN_FEE để tìm số tiền tối đa có thể chi cho Gas
-            // Nếu khách trả quá ít (dưới MIN_FEE), thì tiền cho Gas bằng 0.
             let maxMoneyForGas = Math.max(0, TONG_TIEN_KHACH_TRA - MIN_FEE);
             let gasMoneyToSpend = maxMoneyForGas;
             
@@ -284,16 +374,14 @@
 
             // 4. Thêm dòng Phí Dịch Vụ (nếu có và > 0)
             if (phi_dich_vu > 0) {
-                 let ghi_chu_phi = "Chi phí vận chuyển/lắp đặt";
-                 if (phi_dich_vu > MAX_FEE) {
-                     // Nếu phí dịch vụ vượt quá MAX_FEE, chỉ ghi nhận phí thực tế (Đây là trường hợp khách trả tiền nhưng không mua được Gas thêm)
-                     ghi_chu_phi += ` (Lưu ý: Phí Dịch Vụ vượt quá ${formatCurrency(MAX_FEE)} VNĐ quy định)`;
-                 } else if (phi_dich_vu < MIN_FEE) {
-                    // Trường hợp này gần như không xảy ra do logic maxMoneyForGas ở bước 1, nhưng thêm vào để đảm bảo.
+                let ghi_chu_phi = "Chi phí vận chuyển/lắp đặt";
+                if (phi_dich_vu > MAX_FEE) {
+                    ghi_chu_phi += ` (Lưu ý: Phí Dịch Vụ vượt quá ${formatCurrency(MAX_FEE)} VNĐ quy định)`;
+                } else if (phi_dich_vu < MIN_FEE) {
                     ghi_chu_phi += ` (Lưu ý: Phí Dịch Vụ dưới ${formatCurrency(MIN_FEE)} VNĐ)`;
-                 }
+                }
 
-                 products.push({
+                products.push({
                     stt: currentStt++,
                     ten_hang: "Phí Dịch Vụ",
                     dvt: "Lần",
@@ -403,6 +491,13 @@
             document.getElementById('ngay').value = today.getDate();
             document.getElementById('thang').value = today.getMonth() + 1;
             document.getElementById('nam').value = today.getFullYear();
+            
+            // Gọi hàm formatNumber lần đầu để cập nhật số tiền bằng chữ mặc định
+            const tongSoTienInput = document.getElementById('tong_so_tien_input');
+            if (tongSoTienInput.value) {
+                // Đảm bảo giá trị mặc định được định dạng và chuyển thành chữ
+                formatNumber(tongSoTienInput); 
+            }
         }
     </script>
 </body>
